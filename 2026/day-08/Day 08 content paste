@@ -1,0 +1,122 @@
+# Day 08 – Cloud Server Setup: Docker, Nginx & Web Deployment
+
+Today I learned about cloud server deployment using AWS EC2, SSH, Docker, and Nginx. I also explored security groups, web access, and Nginx log management.
+
+## 1. Connect to the Cloud Server
+
+```bash
+ssh -i your-key.pem ubuntu@<your-instance-public-ip>
+```
+
+Connects to an Ubuntu EC2 instance using SSH and a private key.
+
+## 2. Update the System
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+
+Updates the package list and installs available system updates.
+
+## 3. Install Docker
+
+```bash
+sudo apt install docker.io -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo systemctl status docker
+```
+
+Installs Docker, starts the service, enables it at startup, and checks its status.
+
+## 4. Install Nginx
+
+```bash
+sudo apt install nginx -y
+sudo systemctl start nginx
+sudo systemctl enable nginx
+sudo systemctl status nginx
+```
+
+Installs Nginx and ensures the web server is running.
+
+## 5. Configure Security Groups
+
+Configure the EC2 security group with these inbound rules:
+
+| Protocol | Port | Purpose |
+|---|---:|---|
+| SSH | 22 | Remote server access |
+| HTTP | 80 | Webpage access |
+
+For security, restrict SSH access to your own IP address whenever possible.
+
+## 6. Verify the Nginx Webpage
+
+Open the following URL in a browser:
+
+```text
+http://<your-instance-public-ip>
+```
+
+Replace the placeholder with the actual public IP address of your instance.
+
+If Nginx is running and network access is configured correctly, the default Nginx welcome page should appear.
+
+## 7. Check Nginx Logs
+
+### Access Logs
+
+```bash
+sudo tail -n 50 /var/log/nginx/access.log
+```
+
+Displays the latest 50 access-log entries.
+
+### Error Logs
+
+```bash
+sudo tail -n 50 /var/log/nginx/error.log
+```
+
+Displays the latest 50 error-log entries.
+
+## 8. Save Logs to a File
+
+```bash
+sudo tail -n 50 /var/log/nginx/access.log > ~/nginx-logs.txt
+cat ~/nginx-logs.txt
+```
+
+Saves the latest access-log entries to `nginx-logs.txt` and displays the saved contents.
+
+## 9. Download the Log File
+
+Run this command from your local computer in a separate terminal:
+
+```bash
+scp -i your-key.pem ubuntu@<your-instance-public-ip>:~/nginx-logs.txt .
+```
+
+Copies the log file from the EC2 instance to your local directory. Replace the key filename and public IP with your actual values.
+
+## 10. What I Learned Today
+
+- How to connect to a cloud server using SSH.
+- How to install and manage Docker and Nginx.
+- How to configure security groups for HTTP access.
+- How to verify a web server using its public IP address.
+- How to extract and save logs for troubleshooting.
+
+## 11. Why This Matters for DevOps
+
+Cloud deployment helps me understand infrastructure provisioning, remote server management, service deployment, network security, and log analysis.
+
+These are important skills for a DevOps and Cloud Engineer.
+
+## Day 08 Takeaway
+
+I am building my practical knowledge of Linux, AWS, Docker, Nginx, and cloud server management through hands-on learning.
+
+**Day 08: Building my cloud deployment skills for my DevOps journey.**
