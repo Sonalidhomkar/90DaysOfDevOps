@@ -1,0 +1,407 @@
+# Day 18 – Shell Scripting: Functions & Intermediate Concepts
+
+## Objective
+
+The objective of this practical is to improve my Bash scripting skills by working with functions, function arguments, return values, local variables, strict mode, and Linux system monitoring.
+
+## 1. Basic Functions
+
+### Script: `functions.sh`
+
+```bash
+#!/bin/bash
+
+# Function to greet a user
+greet() {
+    local name="$1"
+    echo "Hello, $name!"
+}
+
+# Function to add two numbers
+add() {
+    local num1="$1"
+    local num2="$2"
+    local sum=$((num1 + num2))
+
+    echo "Sum: $sum"
+}
+
+# Call functions
+greet "Sonali"
+add 10 20
+```
+
+**Run the script:**
+
+```bash
+chmod +x functions.sh
+./functions.sh
+```
+
+**Output:**
+
+```text
+Hello, Sonali!
+Sum: 30
+```
+
+### Key Learnings
+
+- Functions allow us to reuse code without repeating the same commands.
+- Arguments can be passed to functions using `$1`, `$2`, and other positional parameters.
+- The `local` keyword declares variables that are scoped to a function.
+
+## 2. Disk and Memory Monitoring
+
+### Script: `disk_check.sh`
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+# Function to check disk usage
+check_disk() {
+    echo "===== Disk Usage ====="
+    df -h /
+}
+
+# Function to check memory usage
+check_memory() {
+    echo "===== Memory Usage ====="
+    free -h
+}
+
+# Main function
+main() {
+    check_disk
+    echo
+    check_memory
+}
+
+main
+```
+
+**Run the script:**
+
+```bash
+chmod +x disk_check.sh
+./disk_check.sh
+```
+
+**Example Output:**
+
+```text
+===== Disk Usage =====
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        20G   10G   10G  50% /
+
+===== Memory Usage =====
+               total        used        free      shared  buff/cache   available
+Mem:           1.9Gi       650Mi       400Mi        10Mi       850Mi       1.1Gi
+Swap:             0B          0B          0B
+```
+
+*Note: The output above is illustrative. Actual disk and memory values depend on your system.*
+
+### Key Learnings
+
+- `df -h /` displays disk usage for the root filesystem.
+- `free -h` displays memory statistics in a human-readable format.
+- Functions help organize system monitoring tasks into reusable components.
+
+## 3. Strict Mode — `set -euo pipefail`
+
+### Script: `strict_demo.sh`
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+echo "Starting strict mode demonstration"
+
+# Test an undefined variable
+echo "$UNDEFINED_VAR"
+
+echo "This line will not execute"
+```
+
+**Run the script:**
+
+```bash
+chmod +x strict_demo.sh
+./strict_demo.sh
+```
+
+**Expected Output:**
+
+```text
+Starting strict mode demonstration
+./strict_demo.sh: line 9: UNDEFINED_VAR: unbound variable
+```
+
+*Note: The line number and error wording may vary. The script exits because `set -u` treats an unset variable as an error.*
+
+### Understanding Strict Mode
+
+| Option | Description |
+|---|---|
+| `set -e` | Exits when an unhandled command fails in applicable contexts. |
+| `set -u` | Treats the expansion of an unset variable as an error. |
+| `set -o pipefail` | Makes a pipeline fail if a command within it fails, even if the last command succeeds. |
+
+### Test `set -e`
+
+```bash
+#!/bin/bash
+
+set -e
+
+echo "Before command failure"
+
+ls /directory_that_does_not_exist
+
+echo "This line will not execute"
+```
+
+**Expected behavior:** The script exits after the `ls` command fails.
+
+### Test `pipefail`
+
+```bash
+#!/bin/bash
+
+set -o pipefail
+
+false | true
+
+echo "Pipeline exit status: $?"
+```
+
+**Output:**
+
+```text
+Pipeline exit status: 1
+```
+
+### Key Learnings
+
+- Strict mode helps detect common scripting errors.
+- `set -u` helps identify misspelled or unset variables.
+- `pipefail` prevents a successful final command from hiding an earlier pipeline failure.
+- Strict mode does not replace explicit error handling in every situation.
+
+## 4. Local Variables
+
+### Script: `local_demo.sh`
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+MY_VAR="Global Value"
+
+# Function using a local variable
+show_local() {
+    local MY_VAR="Local Value"
+    echo "Inside local function: $MY_VAR"
+}
+
+# Function using a regular variable
+show_global() {
+    MY_VAR="Updated Global Value"
+    echo "Inside global function: $MY_VAR"
+}
+
+echo "Before functions: $MY_VAR"
+
+show_local
+
+echo "After local function: $MY_VAR"
+
+show_global
+
+echo "After global function: $MY_VAR"
+```
+
+**Run the script:**
+
+```bash
+chmod +x local_demo.sh
+./local_demo.sh
+```
+
+**Output:**
+
+```text
+Before functions: Global Value
+Inside local function: Local Value
+After local function: Global Value
+Inside global function: Updated Global Value
+After global function: Updated Global Value
+```
+
+### Key Learnings
+
+- Local variables are limited to their function's scope.
+- Regular variables can modify values in the surrounding scope.
+- Using `local` reduces accidental changes to global variables.
+- Proper variable scope makes scripts easier to maintain and debug.
+
+## 5. Build a Script — System Information Reporter
+
+### Script: `system_info.sh`
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+# Function to print section headers
+print_header() {
+    echo
+    echo "========================================"
+    echo "$1"
+    echo "========================================"
+}
+
+# Function to display hostname and OS
+show_hostname_os() {
+    print_header "HOSTNAME AND OPERATING SYSTEM"
+
+    echo "Hostname: $(hostname)"
+
+    if [[ -r /etc/os-release ]]; then
+        . /etc/os-release
+        echo "Operating System: ${PRETTY_NAME:-Unknown}"
+    else
+        echo "OS information is unavailable."
+    fi
+}
+
+# Function to display uptime
+show_uptime() {
+    print_header "SYSTEM UPTIME"
+    uptime
+}
+
+# Function to display the five filesystems with the highest usage percentage
+show_disk_usage() {
+    print_header "TOP 5 FILESYSTEMS BY DISK USAGE"
+
+    df -h --output=source,size,used,avail,pcent,target |
+        tail -n +2 |
+        sort -k5 -hr |
+        head -n 5
+}
+
+# Function to display memory usage
+show_memory_usage() {
+    print_header "MEMORY USAGE"
+    free -h
+}
+
+# Function to display the five highest CPU-consuming processes
+show_top_processes() {
+    print_header "TOP 5 CPU-CONSUMING PROCESSES"
+
+    ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 6
+}
+
+# Main function
+main() {
+    show_hostname_os
+    show_uptime
+    show_disk_usage
+    show_memory_usage
+    show_top_processes
+}
+
+main
+```
+
+**Run the script:**
+
+```bash
+chmod +x system_info.sh
+./system_info.sh
+```
+
+**Expected Output Structure:**
+
+```text
+========================================
+HOSTNAME AND OPERATING SYSTEM
+========================================
+Hostname: linux-server
+Operating System: Ubuntu ...
+
+========================================
+SYSTEM UPTIME
+========================================
+...
+
+========================================
+TOP 5 FILESYSTEMS BY DISK USAGE
+========================================
+...
+
+========================================
+MEMORY USAGE
+========================================
+...
+
+========================================
+TOP 5 CPU-CONSUMING PROCESSES
+========================================
+...
+```
+
+*Note: The output structure is illustrative. The actual hostname, OS version, uptime, filesystem usage, memory statistics, and process list depend on your Linux system.*
+
+### Key Learnings
+
+- Functions can separate a large script into smaller, manageable tasks.
+- `hostname` and `/etc/os-release` provide system identification information.
+- `uptime` displays how long the system has been running.
+- `df -h` displays filesystem usage.
+- `free -h` displays memory statistics.
+- `ps` displays process information and can sort processes by CPU usage.
+- A `main` function provides a clear entry point for script execution.
+
+## 6. Run All Practice Scripts
+
+Make the scripts executable:
+
+```bash
+chmod +x functions.sh disk_check.sh strict_demo.sh local_demo.sh system_info.sh
+```
+
+Run the scripts individually:
+
+```bash
+./functions.sh
+./disk_check.sh
+./strict_demo.sh
+./local_demo.sh
+./system_info.sh
+```
+
+**Important:** `strict_demo.sh` is intentionally designed to fail when it encounters the undefined variable. This is expected behavior, so run the remaining scripts separately.
+
+## 7. What I Learned
+
+1. Learned to create reusable Bash functions and pass arguments to them.
+2. Understood strict mode using `set -euo pipefail` and the importance of error detection.
+3. Practiced local variables, function organization, and Linux system monitoring.
+
+## Conclusion
+
+Day 18 helped me strengthen my intermediate Bash scripting skills through practical exercises involving functions, variable scope, strict mode, and system monitoring.
+
+These concepts are useful for writing maintainable scripts and building a strong foundation for Linux administration and DevOps automation.
+
+**Challenge:** 90 Days of DevOps  
+**Day:** 18 – Shell Scripting: Functions & Intermediate Concept
